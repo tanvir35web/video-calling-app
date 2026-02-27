@@ -1,37 +1,113 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Video Calling App
+
+A real-time video calling application built with Next.js and Agora RTC SDK. Users can create or join video rooms using a simple Room ID system.
+
+## Features
+
+- 🎥 Real-time video and audio communication
+- 🎤 Mute/unmute microphone
+- 📹 Toggle camera on/off
+- 👥 One-to-one video calls
+- 🌐 Room-based system (join with Room ID)
+- 📱 Responsive design
+- 🎨 Modern UI with Tailwind CSS
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Video SDK**: Agora RTC SDK NG
+- **Icons**: Lucide React
+- **Runtime**: React 19
+
+## Prerequisites
+
+- Node.js 20+ installed
+- Agora account and App ID ([Get one here](https://www.agora.io/))
 
 ## Getting Started
 
-First, run the development server:
-
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd video-calling-app
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Create a `.env.local` file in the root directory:
+```bash
+NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-To learn more about Next.js, take a look at the following resources:
+## How to Use
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Enter your name
+2. Enter a Room ID (e.g., "room123")
+3. Click "Join করুন" to enter the room
+4. Share the same Room ID with another person to connect
+5. Use the controls to:
+   - Toggle microphone (mute/unmute)
+   - Toggle camera (on/off)
+   - Leave the call
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
+
+```
+├── app/
+│   ├── page.tsx              # Home page (join room)
+│   ├── room/[roomId]/
+│   │   └── page.tsx          # Video call room
+│   ├── layout.tsx            # Root layout
+│   └── globals.css           # Global styles
+├── components/
+│   ├── VideoCall.tsx         # Main video call component
+│   └── VideoPlayer.tsx       # Video player component
+├── hooks/
+│   └── useAgora.ts           # Agora SDK integration hook
+└── .env.local                # Environment variables
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_AGORA_APP_ID` | Your Agora App ID | Yes |
+| `NEXT_PUBLIC_AGORA_TOKEN` | Agora token (optional for testing) | No |
+
+## Building for Production
+
+```bash
+npm run build
+npm start
+```
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The easiest way to deploy this app is using [Vercel](https://vercel.com):
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# video-calling-app
+1. Push your code to GitHub
+2. Import the project in Vercel
+3. Add your `NEXT_PUBLIC_AGORA_APP_ID` in environment variables
+4. Deploy
+
+## Notes
+
+- For production use, implement Agora token authentication
+- Camera and microphone permissions are required
+- Works best on modern browsers (Chrome, Firefox, Safari, Edge)
+
+## License
+
+MIT
