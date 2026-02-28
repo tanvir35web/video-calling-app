@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAgora } from "@/hooks/useAgora";
 import VideoPlayer from "./VideoPlayer";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MonitorUp, MonitorX } from "lucide-react";
 
 interface VideoCallProps {
   channelName: string;
@@ -15,13 +15,14 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
   const {
     localVideoTrack,
     remoteUser,
-    isJoined,
     isMuted,
     isCameraOff,
+    isScreenSharing,
     isLoading,
     error,
     toggleMic,
     toggleCamera,
+    toggleScreenShare,
     leaveChannel,
   } = useAgora(channelName, userName);
 
@@ -98,8 +99,13 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
             videoTrack={localVideoTrack}
             isLocal={true}
             userName={userName}
-            isCameraOff={isCameraOff}
+            isCameraOff={isCameraOff && !isScreenSharing}
           />
+          {isScreenSharing && (
+            <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+              <MonitorUp size={12} /> Screen Sharing
+            </div>
+          )}
         </div>
       </div>
 
@@ -124,14 +130,28 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
         {/* Camera button */}
         <button
           onClick={toggleCamera}
+          disabled={isScreenSharing}
           className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-            isCameraOff
+            isCameraOff || isScreenSharing
               ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
               : "bg-gray-800 text-white hover:bg-gray-700"
-          }`}
+          } ${isScreenSharing ? "opacity-50 cursor-not-allowed" : ""}`}
           title={isCameraOff ? "Camera চালু করুন" : "Camera বন্ধ করুন"}
         >
           {isCameraOff ? <VideoOff size={22} /> : <Video size={22} />}
+        </button>
+
+        {/* Screen Share button */}
+        <button
+          onClick={toggleScreenShare}
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+            isScreenSharing
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-gray-800 text-white hover:bg-gray-700"
+          }`}
+          title={isScreenSharing ? "Screen share বন্ধ করুন" : "Screen share করুন"}
+        >
+          {isScreenSharing ? <MonitorX size={22} /> : <MonitorUp size={22} />}
         </button>
 
          {/* Leave button */}
