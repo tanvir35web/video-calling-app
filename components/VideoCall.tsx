@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useAgora } from "@/hooks/useAgora";
 import VideoPlayer from "./VideoPlayer";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MonitorUp, MonitorX } from "lucide-react";
@@ -12,6 +13,8 @@ interface VideoCallProps {
 
 export default function VideoCall({ channelName, userName }: VideoCallProps) {
   const router = useRouter();
+  const [isScreenShareSupported, setIsScreenShareSupported] = useState(true);
+  
   const {
     localVideoTrack,
     remoteUser,
@@ -25,6 +28,21 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
     toggleScreenShare,
     leaveChannel,
   } = useAgora(channelName, userName);
+
+  // Check if screen sharing is supported
+  useEffect(() => {
+    const checkScreenShareSupport = () => {
+      // Check if getDisplayMedia is available
+      const isSupported = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+      
+      // iOS Safari doesn't support screen sharing
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      setIsScreenShareSupported(isSupported && !isIOS);
+    };
+    
+    checkScreenShareSupport();
+  }, []);
 
   const handleLeave = async () => {
     await leaveChannel();
@@ -141,18 +159,20 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
           {isCameraOff ? <VideoOff size={22} /> : <Video size={22} />}
         </button>
 
-        {/* Screen Share button */}
-        <button
-          onClick={toggleScreenShare}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-            isScreenSharing
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-800 text-white hover:bg-gray-700"
-          }`}
-          title={isScreenSharing ? "Screen share বন্ধ করুন" : "Screen share করুন"}
-        >
-          {isScreenSharing ? <MonitorX size={22} /> : <MonitorUp size={22} />}
-        </button>
+        {/* Screen Share button - only show if supported */}
+        {isScreenShareSupported && (
+          <button
+            onClick={toggleScreenShare}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+              isScreenSharing
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-800 text-white hover:bg-gray-700"
+            }`}
+            title={isScreenSharing ? "Screen share বন্ধ করুন" : "Screen share করুন"}
+          >
+            {isScreenSharing ? <MonitorX size={22} /> : <MonitorUp size={22} />}
+          </button>
+        )}
 
          {/* Leave button */}
         <button

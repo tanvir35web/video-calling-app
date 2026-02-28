@@ -277,6 +277,7 @@ NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 4. **No Chat**: Text chat feature not available
 5. **Browser Compatibility**: Requires modern browsers with WebRTC support
 6. **Screen Share**: Camera is disabled while screen sharing is active
+7. **iOS Limitation**: Screen sharing is not supported on iOS devices (Safari/Chrome on iPhone/iPad)
 
 ## Security Considerations
 
@@ -435,6 +436,7 @@ npm run dev
 - Check browser permissions for screen capture
 - Try selecting a different window/tab/screen
 - Verify browser supports screen sharing API
+- Note: iOS Safari does not support screen sharing (button will be hidden on iOS devices)
 
 ## License
 

@@ -51,6 +51,23 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Leave channel
+  const leaveChannel = useCallback(async () => {
+    try {
+      localAudioTrackRef.current?.close();
+      localVideoTrackRef.current?.close();
+      screenTrackRef.current?.close();
+      originalVideoTrackRef.current?.close();
+      await clientRef.current?.leave();
+      setIsJoined(false);
+      setRemoteUser(null);
+      setLocalVideoTrack(null);
+      setIsScreenSharing(false);
+    } catch (err) {
+      console.error("Leave error:", err);
+    }
+  }, []);
+
   // Join channel and setup
   useEffect(() => {
     if (!channelName) return;
@@ -86,7 +103,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
         });
 
         // Remote user leave করলে
-        client.on("user-unpublished", (user, mediaType) => {
+        client.on("user-unpublished", (_user, mediaType) => {
           if (mediaType === "video") {
             setRemoteUser((prev) =>
               prev ? { ...prev, videoTrack: undefined } : null
@@ -115,9 +132,10 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
 
         setIsJoined(true);
         setIsLoading(false);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Agora error:", err);
-        setError(err?.message || "Camera/Mic access দিন এবং আবার চেষ্টা করুন");
+        const errorMessage = err instanceof Error ? err.message : "Camera/Mic access দিন এবং আবার চেষ্টা করুন";
+        setError(errorMessage);
         setIsLoading(false);
       }
     };
@@ -128,7 +146,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
     return () => {
       leaveChannel();
     };
-  }, [channelName]);
+  }, [channelName, userName, leaveChannel]);
 
   // Mic toggle
   const toggleMic = useCallback(async () => {
@@ -147,6 +165,12 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
   // Screen share toggle
   const toggleScreenShare = useCallback(async () => {
     if (!clientRef.current) return;
+
+    // Check if screen sharing is supported
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert("Screen sharing is not supported on this device/browser. Please use Chrome, Firefox, or Edge on desktop.");
+      return;
+    }
 
     try {
       if (isScreenSharing) {
@@ -191,34 +215,35 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
         setIsScreenSharing(true);
 
         // Handle when user stops sharing via browser UI
-        screenTrackRef.current.on("track-ended", async () => {
-          await toggleScreenShare();
+        screenTrackRef.current.on("track-ended", () => {
+          // Stop screen sharing when user clicks browser's stop button
+          setIsScreenSharing(false);
+          if (originalVideoTrackRef.current && clientRef.current) {
+            localVideoTrackRef.current = originalVideoTrackRef.current;
+            setLocalVideoTrack(originalVideoTrackRef.current);
+            clientRef.current.unpublish(screenTrackRef.current!).then(() => {
+              clientRef.current!.publish(originalVideoTrackRef.current!);
+              screenTrackRef.current?.close();
+              screenTrackRef.current = null;
+              originalVideoTrackRef.current = null;
+            });
+          }
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Screen share error:", err);
-      if (err.code === "PERMISSION_DENIED") {
+      const error = err as { code?: string; name?: string };
+      if (error.code === "PERMISSION_DENIED" || error.name === "NotAllowedError") {
         alert("Screen share permission denied");
+      } else if (error.code === "NOT_SUPPORTED" || error.name === "NotSupportedError") {
+        alert("Screen sharing is not supported on this device/browser");
+      } else {
+        alert("Failed to start screen sharing. Please try again.");
       }
     }
   }, [isScreenSharing]);
 
   // Leave channel
-  const leaveChannel = useCallback(async () => {
-    try {
-      localAudioTrackRef.current?.close();
-      localVideoTrackRef.current?.close();
-      screenTrackRef.current?.close();
-      originalVideoTrackRef.current?.close();
-      await clientRef.current?.leave();
-      setIsJoined(false);
-      setRemoteUser(null);
-      setLocalVideoTrack(null);
-      setIsScreenSharing(false);
-    } catch (err) {
-      console.error("Leave error:", err);
-    }
-  }, []);
 
   return {
     localVideoTrack,
