@@ -122,10 +122,10 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col p-4 gap-4">
+    <div className="h-screen w-screen bg-gray-950 flex flex-col p-4 gap-4 overflow-hidden">
 
       {/* Room info */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h2 className="text-white font-semibold">Room: {channelName}</h2>
           <p className="text-gray-500 text-sm">
@@ -142,7 +142,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
       {/* Video area - Grid layout for multiple participants */}
       {remoteUsers.length === 0 ? (
         /* Only local user - show just own video centered */
-        <div className="flex-1 flex items-center justify-center px-4" style={{ minHeight: "60vh" }}>
+        <div className="flex-1 flex items-center justify-center overflow-hidden min-h-0">
           <div className="relative w-full max-w-3xl h-[600px]">
             <VideoPlayer
               videoTrack={localVideoTrack}
@@ -155,23 +155,24 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
                 <MonitorUp size={12} /> Screen Sharing
               </div>
             )}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-800/90 text-gray-300 text-sm px-4 py-2 rounded-full">
-              অন্যজনের জন্য অপেক্ষা করছি...
-            </div>
+           
           </div>
         </div>
       ) : (
         /* Multiple participants - show grid */
         <div 
-          className={`flex-1 grid gap-4 ${
-            remoteUsers.length === 1 ? "grid-cols-1 md:grid-cols-2" :
-            remoteUsers.length === 2 ? "grid-cols-1 md:grid-cols-3" :
-            "grid-cols-2 md:grid-cols-3"
-          }`} 
-          style={{ minHeight: "60vh" }}
+          className={`flex-1 gap-2 md:gap-4 overflow-hidden min-h-0 ${
+            remoteUsers.length === 1 
+              ? "grid grid-cols-1 md:grid-cols-2" 
+              : remoteUsers.length === 2 
+                ? "grid grid-cols-2 md:grid-cols-3 auto-rows-fr" 
+                : "grid grid-cols-2 md:grid-cols-3 auto-rows-fr"
+          }`}
         >
           {/* Local video */}
-          <div className="relative w-full h-full min-h-64">
+          <div className={`relative w-full h-full ${
+            remoteUsers.length === 2 ? "col-span-2 md:col-span-1" : ""
+          }`}>
             <VideoPlayer
               videoTrack={localVideoTrack}
               isLocal={true}
@@ -187,7 +188,10 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
 
           {/* Remote videos */}
           {remoteUsers.map((user) => (
-            <div key={user.uid} className="relative w-full h-full min-h-64">
+            <div 
+              key={user.uid} 
+              className="relative w-full h-full"
+            >
               <VideoPlayer
                 videoTrack={user.videoTrack}
                 isLocal={false}
@@ -200,7 +204,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
       )}
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-2 md:gap-4 py-2">
+      <div className="flex items-center justify-center gap-2 md:gap-4 py-2 flex-shrink-0">
 
         {/* Mic button */}
         <button
