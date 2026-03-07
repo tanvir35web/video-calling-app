@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAgora } from "@/hooks/useAgora";
 import VideoPlayer from "./VideoPlayer";
+import PermissionModal from "./PermissionModal";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MonitorUp, MonitorX } from "lucide-react";
 
 interface VideoCallProps {
@@ -14,6 +15,7 @@ interface VideoCallProps {
 export default function VideoCall({ channelName, userName }: VideoCallProps) {
   const router = useRouter();
   const [isScreenShareSupported, setIsScreenShareSupported] = useState(true);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
   
   const {
     localVideoTrack,
@@ -23,10 +25,12 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
     isScreenSharing,
     isLoading,
     error,
+    errorType,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
     leaveChannel,
+    retryConnection,
   } = useAgora(channelName, userName);
 
   // Check if screen sharing is supported
@@ -44,6 +48,23 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
     checkScreenShareSupport();
   }, []);
 
+  // Show modal when error occurs
+  useEffect(() => {
+    if (error && errorType) {
+      setShowPermissionModal(true);
+    }
+  }, [error, errorType]);
+
+  const handleModalClose = () => {
+    setShowPermissionModal(false);
+    router.push("/");
+  };
+
+  const handleRetry = () => {
+    setShowPermissionModal(false);
+    retryConnection();
+  };
+
   const handleLeave = async () => {
     await leaveChannel();
     router.push("/");
@@ -59,18 +80,21 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
     );
   }
 
-  // Error state
+  // Error state - now handled by modal
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 p-4">
-        <p className="text-red-400 text-center text-lg">⚠️ {error}</p>
-        <button
-          onClick={() => router.push("/")}
-          className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          ← ফিরে যান
-        </button>
-      </div>
+      <>
+        <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4 p-4">
+          <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 text-center">Connection চেষ্টা করছি...</p>
+        </div>
+        <PermissionModal
+          isOpen={showPermissionModal}
+          onClose={handleModalClose}
+          onRetry={handleRetry}
+          errorType={errorType || "unknown"}
+        />
+      </>
     );
   }
 

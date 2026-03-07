@@ -22,10 +22,12 @@ interface UseAgoraReturn {
   isScreenSharing: boolean;
   isLoading: boolean;
   error: string | null;
+  errorType: "permission" | "device" | "unknown" | null;
   toggleMic: () => Promise<void>;
   toggleCamera: () => Promise<void>;
   toggleScreenShare: () => Promise<void>;
   leaveChannel: () => Promise<void>;
+  retryConnection: () => void;
 }
 
 const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID as string;
@@ -50,6 +52,8 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"permission" | "device" | "unknown" | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
 
   // Leave channel
   const leaveChannel = useCallback(async () => {
@@ -76,6 +80,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
       try {
         setIsLoading(true);
         setError(null);
+        setErrorType(null);
 
         // Client তৈরি করা
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -134,7 +139,38 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
         setIsLoading(false);
       } catch (err: unknown) {
         console.error("Agora error:", err);
-        const errorMessage = err instanceof Error ? err.message : "Camera/Mic access দিন এবং আবার চেষ্টা করুন";
+        
+        // Detect error type
+        let detectedErrorType: "permission" | "device" | "unknown" = "unknown";
+        let errorMessage = "Camera/Mic access দিন এবং আবার চেষ্টা করুন";
+
+        if (err instanceof Error) {
+          const errorName = err.name;
+          const errorMsg = err.message.toLowerCase();
+
+          // Permission denied errors
+          if (
+            errorName === "NotAllowedError" ||
+            errorMsg.includes("permission") ||
+            errorMsg.includes("denied")
+          ) {
+            detectedErrorType = "permission";
+            errorMessage = "Camera এবং Microphone permission দিতে হবে";
+          }
+          // Device not found or in use errors
+          else if (
+            errorName === "NotFoundError" ||
+            errorName === "NotReadableError" ||
+            errorMsg.includes("not found") ||
+            errorMsg.includes("not readable") ||
+            errorMsg.includes("device in use")
+          ) {
+            detectedErrorType = "device";
+            errorMessage = "Camera বা Mic খুঁজে পাওয়া যায়নি বা অন্য app ব্যবহার করছে";
+          }
+        }
+
+        setErrorType(detectedErrorType);
         setError(errorMessage);
         setIsLoading(false);
       }
@@ -146,7 +182,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
     return () => {
       leaveChannel();
     };
-  }, [channelName, userName, leaveChannel]);
+  }, [channelName, userName, leaveChannel, retryTrigger]);
 
   // Mic toggle
   const toggleMic = useCallback(async () => {
@@ -245,6 +281,11 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
 
   // Leave channel
 
+  // Retry connection
+  const retryConnection = useCallback(() => {
+    setRetryTrigger((prev) => prev + 1);
+  }, []);
+
   return {
     localVideoTrack,
     remoteUser,
@@ -254,9 +295,11 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
     isScreenSharing,
     isLoading,
     error,
+    errorType,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
     leaveChannel,
+    retryConnection,
   };
 }

@@ -52,8 +52,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-      <div className="bg-gray-900 rounded-2xl p-8 w-full max-w-md shadow-xl">
-        <h1 className="text-3xl font-bold text-white text-center mb-2">📹 Video Call</h1>
+      <div className="md:bg-gray-900 rounded-2xl p-1 md:p-8 w-full max-w-md shadow-xl">
+        <h1 className="text-3xl font-bold text-white text-center mb-2 flex items-center justify-center gap-2">
+          <Video size={38} /> Video Call</h1>
         <p className="text-gray-400 text-center mb-6">যেকোনো জায়গা থেকে connect করুন</p>
 
         {/* Tabs */}
@@ -83,21 +84,21 @@ export default function Home() {
               <label className="text-gray-300 text-sm mb-1 block">আপনার নাম</label>
               <input
                 type="text"
-                placeholder="যেমন: Rahim"
+                placeholder="Name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+                className="w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
               />
             </div>
             <div>
               <label className="text-gray-300 text-sm mb-1 block">Room ID</label>
               <input
                 type="text"
-                placeholder="যেমন: ABC123"
+                placeholder="Ex. ABC123"
                 value={roomId}
                 onChange={(e) => setRoomId(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
+                className="w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500"
               />
             </div>
             {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -117,11 +118,11 @@ export default function Home() {
               <label className="text-gray-300 text-sm mb-1 block">আপনার নাম</label>
               <input
                 type="text"
-                placeholder="যেমন: Karim"
+                placeholder="Name"
                 value={creatorName}
                 onChange={(e) => setCreatorName(e.target.value)}
                 disabled={!!generatedLink}
-                className="w-full bg-gray-800 text-white rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 disabled:opacity-50"
+                className="w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 disabled:opacity-50"
               />
             </div>
 
