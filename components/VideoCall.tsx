@@ -19,7 +19,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
   
   const {
     localVideoTrack,
-    remoteUser,
+    remoteUsers,
     isMuted,
     isCameraOff,
     isScreenSharing,
@@ -106,7 +106,9 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
         <div>
           <h2 className="text-white font-semibold">Room: {channelName}</h2>
           <p className="text-gray-500 text-sm">
-            {remoteUser ? "✅ Connected" : "⏳ অন্যজনের জন্য অপেক্ষা করছি..."}
+            {remoteUsers.length > 0 
+              ? `✅ ${remoteUsers.length + 1} জন connected` 
+              : "⏳ অন্যজনের জন্য অপেক্ষা করছি..."}
           </p>
         </div>
         <span className="bg-green-500/20 text-green-400 text-xs px-3 py-1 rounded-full flex items-center gap-1">
@@ -114,42 +116,65 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
         </span>
       </div>
 
-      {/* Video area */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4" style={{ minHeight: "60vh" }}>
-
-        {/* Remote video — বড় */}
-        <div className="relative w-full h-full min-h-64">
-          {remoteUser ? (
+      {/* Video area - Grid layout for multiple participants */}
+      {remoteUsers.length === 0 ? (
+        /* Only local user - show just own video centered */
+        <div className="flex-1 flex items-center justify-center px-4" style={{ minHeight: "60vh" }}>
+          <div className="relative w-full max-w-3xl aspect-video">
             <VideoPlayer
-              videoTrack={remoteUser.videoTrack}
-              isLocal={false}
-              userName="Guest"
-              isCameraOff={!remoteUser.videoTrack}
+              videoTrack={localVideoTrack}
+              isLocal={true}
+              userName={userName}
+              isCameraOff={isCameraOff && !isScreenSharing}
             />
-          ) : (
-            <div className="w-full h-full min-h-64 bg-gray-800 rounded-2xl flex flex-col items-center justify-center gap-3">
-              <div className="text-5xl">👤</div>
-              <p className="text-gray-400">অন্যজন এখনো join করেনি</p>
-              <p className="text-gray-600 text-sm">Room ID শেয়ার করুন: <span className="text-blue-400">{channelName}</span></p>
+            {isScreenSharing && (
+              <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                <MonitorUp size={12} /> Screen Sharing
+              </div>
+            )}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-800/90 text-gray-300 text-sm px-4 py-2 rounded-full">
+              অন্যজনের জন্য অপেক্ষা করছি...
             </div>
-          )}
+          </div>
         </div>
+      ) : (
+        /* Multiple participants - show grid */
+        <div 
+          className={`flex-1 grid gap-4 ${
+            remoteUsers.length === 1 ? "grid-cols-1 md:grid-cols-2" :
+            remoteUsers.length === 2 ? "grid-cols-1 md:grid-cols-3" :
+            "grid-cols-2 md:grid-cols-3"
+          }`} 
+          style={{ minHeight: "60vh" }}
+        >
+          {/* Local video */}
+          <div className="relative w-full h-full min-h-64">
+            <VideoPlayer
+              videoTrack={localVideoTrack}
+              isLocal={true}
+              userName={userName}
+              isCameraOff={isCameraOff && !isScreenSharing}
+            />
+            {isScreenSharing && (
+              <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
+                <MonitorUp size={12} /> Screen Sharing
+              </div>
+            )}
+          </div>
 
-        {/* Local video */}
-        <div className="relative w-full h-full min-h-64">
-          <VideoPlayer
-            videoTrack={localVideoTrack}
-            isLocal={true}
-            userName={userName}
-            isCameraOff={isCameraOff && !isScreenSharing}
-          />
-          {isScreenSharing && (
-            <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1">
-              <MonitorUp size={12} /> Screen Sharing
+          {/* Remote videos */}
+          {remoteUsers.map((user) => (
+            <div key={user.uid} className="relative w-full h-full min-h-64">
+              <VideoPlayer
+                videoTrack={user.videoTrack}
+                isLocal={false}
+                userName={`User ${user.uid}`}
+                isCameraOff={!user.videoTrack}
+              />
             </div>
-          )}
+          ))}
         </div>
-      </div>
+      )}
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-4 py-2">

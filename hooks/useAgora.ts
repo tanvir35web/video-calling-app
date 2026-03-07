@@ -15,7 +15,7 @@ interface RemoteUser {
 
 interface UseAgoraReturn {
   localVideoTrack: ILocalVideoTrack | null;
-  remoteUser: RemoteUser | null;
+  remoteUsers: RemoteUser[];
   isJoined: boolean;
   isMuted: boolean;
   isCameraOff: boolean;
@@ -45,7 +45,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
   const originalVideoTrackRef = useRef<ILocalVideoTrack | null>(null);
 
   const [localVideoTrack, setLocalVideoTrack] = useState<ILocalVideoTrack | null>(null);
-  const [remoteUser, setRemoteUser] = useState<RemoteUser | null>(null);
+  const [remoteUsers, setRemoteUsers] = useState<RemoteUser[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
@@ -64,7 +64,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
       originalVideoTrackRef.current?.close();
       await clientRef.current?.leave();
       setIsJoined(false);
-      setRemoteUser(null);
+      setRemoteUsers([]);
       setLocalVideoTrack(null);
       setIsScreenSharing(false);
     } catch (err) {
@@ -91,33 +91,44 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
           await client.subscribe(user, mediaType);
 
           if (mediaType === "video") {
-            setRemoteUser((prev) => ({
-              ...prev,
-              uid: user.uid,
-              videoTrack: user.videoTrack,
-            }));
+            setRemoteUsers((prev) => {
+              const existingIndex = prev.findIndex((u) => u.uid === user.uid);
+              if (existingIndex >= 0) {
+                const updated = [...prev];
+                updated[existingIndex] = { ...updated[existingIndex], videoTrack: user.videoTrack };
+                return updated;
+              }
+              return [...prev, { uid: user.uid, videoTrack: user.videoTrack }];
+            });
           }
           if (mediaType === "audio") {
             user.audioTrack?.play();
-            setRemoteUser((prev) => ({
-              ...prev,
-              uid: user.uid,
-              audioTrack: user.audioTrack,
-            }));
+            setRemoteUsers((prev) => {
+              const existingIndex = prev.findIndex((u) => u.uid === user.uid);
+              if (existingIndex >= 0) {
+                const updated = [...prev];
+                updated[existingIndex] = { ...updated[existingIndex], audioTrack: user.audioTrack };
+                return updated;
+              }
+              return [...prev, { uid: user.uid, audioTrack: user.audioTrack }];
+            });
           }
         });
 
-        // Remote user leave করলে
-        client.on("user-unpublished", (_user, mediaType) => {
+        // Remote user unpublish করলে
+        client.on("user-unpublished", (user, mediaType) => {
           if (mediaType === "video") {
-            setRemoteUser((prev) =>
-              prev ? { ...prev, videoTrack: undefined } : null
+            setRemoteUsers((prev) =>
+              prev.map((u) =>
+                u.uid === user.uid ? { ...u, videoTrack: undefined } : u
+              )
             );
           }
         });
 
-        client.on("user-left", () => {
-          setRemoteUser(null);
+        // Remote user leave করলে
+        client.on("user-left", (user) => {
+          setRemoteUsers((prev) => prev.filter((u) => u.uid !== user.uid));
         });
 
         // Channel এ join করা (token ছাড়া টেস্টের জন্য null)
@@ -288,7 +299,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
 
   return {
     localVideoTrack,
-    remoteUser,
+    remoteUsers,
     isJoined,
     isMuted,
     isCameraOff,
