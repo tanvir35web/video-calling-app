@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAgora } from "@/hooks/useAgora";
+import { useAgoraChat } from "@/hooks/useAgoraChat";
 import VideoPlayer from "./VideoPlayer";
 import PermissionModal from "./PermissionModal";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MonitorUp, MonitorX } from "lucide-react";
+import ChatPanel from "./ChatPanel";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Wifi, MonitorUp, MonitorX, MessageSquare } from "lucide-react";
 
 interface VideoCallProps {
   channelName: string;
@@ -16,6 +18,8 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
   const router = useRouter();
   const [isScreenShareSupported, setIsScreenShareSupported] = useState(true);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   const {
     localVideoTrack,
@@ -32,6 +36,8 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
     leaveChannel,
     retryConnection,
   } = useAgora(channelName, userName);
+
+  const { messages, sendMessage } = useAgoraChat(channelName, userName);
 
   // Check if screen sharing is supported
   useEffect(() => {
@@ -54,6 +60,23 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
       setShowPermissionModal(true);
     }
   }, [error, errorType]);
+
+  // Track unread messages
+  useEffect(() => {
+    if (!isChatOpen && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (!lastMessage.isLocal) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    }
+  }, [messages, isChatOpen]);
+
+  // Reset unread count when chat opens
+  useEffect(() => {
+    if (isChatOpen) {
+      setUnreadCount(0);
+    }
+  }, [isChatOpen]);
 
   const handleModalClose = () => {
     setShowPermissionModal(false);
@@ -120,7 +143,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
       {remoteUsers.length === 0 ? (
         /* Only local user - show just own video centered */
         <div className="flex-1 flex items-center justify-center px-4" style={{ minHeight: "60vh" }}>
-          <div className="relative w-full max-w-3xl aspect-video">
+          <div className="relative w-full max-w-3xl h-[600px]">
             <VideoPlayer
               videoTrack={localVideoTrack}
               isLocal={true}
@@ -177,12 +200,12 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
       )}
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-4 py-2">
+      <div className="flex items-center justify-center gap-2 md:gap-4 py-2">
 
         {/* Mic button */}
         <button
           onClick={toggleMic}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+          className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-colors ${
             isMuted
               ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
               : "bg-gray-800 text-white hover:bg-gray-700"
@@ -198,7 +221,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
         <button
           onClick={toggleCamera}
           disabled={isScreenSharing}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+          className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-colors ${
             isCameraOff || isScreenSharing
               ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
               : "bg-gray-800 text-white hover:bg-gray-700"
@@ -212,7 +235,7 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
         {isScreenShareSupported && (
           <button
             onClick={toggleScreenShare}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+            className={`w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-colors ${
               isScreenSharing
                 ? "bg-blue-600 text-white hover:bg-blue-700"
                 : "bg-gray-800 text-white hover:bg-gray-700"
@@ -223,17 +246,39 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
           </button>
         )}
 
+        {/* Chat button */}
+        <button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className="relative w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-colors bg-gray-800 text-white hover:bg-gray-700"
+          title="Chat"
+        >
+          <MessageSquare size={22} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+        </button>
+
          {/* Leave button */}
         <button
           onClick={handleLeave}
-          className="w-fit px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 transition-colors shadow-lg"
+          className="w-fit px-3 md:px-5 py-2 md:py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 transition-colors shadow-lg"
           title="Call শেষ করুন"
         >
-          <PhoneOff size={26} />
-          Leave
+          <PhoneOff size={20} />
+          End
         </button>
 
       </div>
+
+      {/* Chat Panel */}
+      <ChatPanel
+        messages={messages}
+        onSendMessage={sendMessage}
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+      />
     </div>
   );
 }

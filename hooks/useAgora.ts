@@ -28,6 +28,7 @@ interface UseAgoraReturn {
   toggleScreenShare: () => Promise<void>;
   leaveChannel: () => Promise<void>;
   retryConnection: () => void;
+  client: IAgoraRTCClient | null;
 }
 
 const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID as string;
@@ -312,5 +313,6 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
     toggleScreenShare,
     leaveChannel,
     retryConnection,
+    client: clientRef.current,
   };
 }
