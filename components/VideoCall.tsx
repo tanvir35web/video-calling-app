@@ -122,13 +122,13 @@ export default function VideoCall({ channelName, userName }: VideoCallProps) {
   }
 
   return (
-    <div className="h-screen w-screen bg-gray-950 flex flex-col p-4 gap-4 overflow-hidden">
+    <div className="h-[100dvh] w-screen bg-gray-950 flex flex-col p-2 md:p-4 gap-2 md:gap-4 overflow-hidden">
 
       {/* Room info */}
-      <div className="flex items-center justify-between flex-shrink-0">
-        <div>
-          <h2 className="text-white font-semibold">Room: {channelName}</h2>
-          <p className="text-gray-500 text-sm">
+      <div className="flex items-center justify-between flex-shrink-0 min-h-0">
+        <div className="min-w-0">
+          <h2 className="text-white font-semibold text-sm md:text-base truncate">Room: {channelName}</h2>
+          <p className="text-gray-500 text-xs md:text-sm truncate">
             {remoteUsers.length > 0 
               ? `✅ ${remoteUsers.length + 1} জন connected` 
               : "⏳ অন্যজনের জন্য অপেক্ষা করছি..."}
