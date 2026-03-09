@@ -11,6 +11,7 @@ A real-time peer-to-peer video calling application built with Next.js 16 and Ago
 - **Language**: TypeScript 5
 - **Runtime**: React 19.2.3
 - **Video SDK**: Agora RTC SDK NG 4.24.2
+- **Real-time Messaging**: Pusher (WebSocket-based chat)
 
 ### Styling & UI
 - **CSS Framework**: Tailwind CSS 4
@@ -32,13 +33,19 @@ video-call-app/
 │   ├── layout.tsx                # Root layout with fonts
 │   ├── globals.css               # Global styles
 │   ├── favicon.ico               # App icon
+│   ├── api/
+│   │   └── send-message/
+│   │       └── route.ts          # Pusher message API endpoint
 │   └── room/[roomId]/
 │       └── page.tsx              # Dynamic room page
 ├── components/
 │   ├── VideoCall.tsx             # Main video call component
-│   └── VideoPlayer.tsx           # Individual video player
+│   ├── VideoPlayer.tsx           # Individual video player
+│   ├── ChatPanel.tsx             # Real-time chat interface
+│   └── PermissionModal.tsx       # Camera/mic permission modal
 ├── hooks/
-│   └── useAgora.ts               # Agora SDK integration hook
+│   ├── useAgora.ts               # Agora SDK integration hook
+│   └── useAgoraChat.ts           # Pusher chat integration hook
 ├── public/                       # Static assets
 ├── .env.local                    # Environment variables (not in repo)
 ├── .env.example                  # Environment template
@@ -66,11 +73,20 @@ video-call-app/
 - **Leave Call**: Exit room and return to home
 - **Visual Feedback**: Icons and UI states reflect control status
 
-### 4. User Experience
+### 4. Real-time Chat
+- **Text Messaging**: Send and receive messages during video calls
+- **Pusher Integration**: WebSocket-based real-time message delivery
+- **Chat Panel**: Collapsible side panel with message history
+- **Message Indicators**: Sender name, timestamp, and read status
+- **Auto-scroll**: Automatically scrolls to latest messages
+- **Bengali UI**: Chat interface with Bengali placeholders
+
+### 5. User Experience
 - **Loading States**: Spinner during camera/mic initialization
 - **Error Handling**: User-friendly error messages
 - **Waiting State**: Shows placeholder when remote user hasn't joined
 - **Live Indicator**: Visual "Live" badge during active calls
+- **Permission Modal**: Guides users through camera/mic permissions
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## Component Breakdown
@@ -140,7 +156,35 @@ video-call-app/
 - `userName`: Display name
 - `isCameraOff`: Camera state
 
-### 5. useAgora Hook (`hooks/useAgora.ts`)
+### 5. ChatPanel Component (`components/ChatPanel.tsx`)
+
+**Purpose**: Real-time text chat interface
+
+**Features**:
+- Message display with sender identification
+- Local vs remote message styling
+- Auto-scroll to latest messages
+- Keyboard shortcuts (Enter to send)
+- Empty state handling
+- Timestamp formatting
+
+**Props**:
+- `messages`: Array of Message objects
+- `onSendMessage`: Callback for sending messages
+- `isOpen`: Chat panel visibility state
+- `onClose`: Callback to close chat panel
+
+### 6. PermissionModal Component (`components/PermissionModal.tsx`)
+
+**Purpose**: Guide users through camera and microphone permissions
+
+**Features**:
+- Step-by-step permission instructions
+- Browser-specific guidance
+- Visual feedback for permission status
+- Retry mechanism for denied permissions
+
+### 7. useAgora Hook (`hooks/useAgora.ts`)
 
 **Purpose**: Encapsulates all Agora SDK logic
 
@@ -168,6 +212,35 @@ video-call-app/
 - `toggleCamera()`: Camera on/off function
 - `toggleScreenShare()`: Start/stop screen sharing
 - `leaveChannel()`: Disconnect function
+
+### 8. useAgoraChat Hook (`hooks/useAgoraChat.ts`)
+
+**Purpose**: Encapsulates Pusher chat functionality
+
+**Responsibilities**:
+- Pusher client initialization
+- Channel subscription (per room)
+- Real-time message listening
+- Message sending via API
+- Connection state management
+- Automatic cleanup on unmount
+
+**Parameters**:
+- `channelName`: Room ID for chat channel
+- `userName`: Current user's display name
+
+**Return Values**:
+- `messages`: Array of chat messages
+- `sendMessage()`: Function to send new messages
+- `isConnected`: Pusher connection status
+
+**Message Flow**:
+1. User types message in ChatPanel
+2. `sendMessage()` called with text
+3. Message sent to `/api/send-message` endpoint
+4. Backend triggers Pusher event
+5. All connected clients receive message
+6. Message added to local state and displayed
 
 ## Data Flow
 
@@ -209,7 +282,14 @@ video-call-app/
 ### Required Variables
 
 ```bash
+# Agora Video/Audio
 NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
+
+# Pusher Chat (all required for chat functionality)
+NEXT_PUBLIC_PUSHER_KEY=your_pusher_key
+NEXT_PUBLIC_PUSHER_CLUSTER=your_pusher_cluster
+PUSHER_APP_ID=your_pusher_app_id
+PUSHER_SECRET=your_pusher_secret
 ```
 
 ### Optional Variables
@@ -218,7 +298,10 @@ NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id_here
 NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 ```
 
-**Note**: Token authentication is recommended for production but optional for testing.
+**Note**: 
+- Agora token authentication is recommended for production but optional for testing
+- All Pusher credentials are required for chat to work
+- Get Pusher credentials from https://pusher.com (free tier available)
 
 ## Agora Integration Details
 
@@ -272,12 +355,13 @@ NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 ## Known Issues & Limitations
 
 1. **One-to-One Only**: Currently supports only 2 participants
-2. **No Token Auth**: Uses null token (testing mode)
+2. **No Token Auth**: Uses null token for Agora (testing mode)
 3. **No Recording**: Call recording not implemented
-4. **No Chat**: Text chat feature not available
-5. **Browser Compatibility**: Requires modern browsers with WebRTC support
-6. **Screen Share**: Camera is disabled while screen sharing is active
-7. **iOS Limitation**: Screen sharing is not supported on iOS devices (Safari/Chrome on iPhone/iPad)
+4. **Browser Compatibility**: Requires modern browsers with WebRTC support
+5. **Screen Share**: Camera is disabled while screen sharing is active
+6. **iOS Limitation**: Screen sharing is not supported on iOS devices (Safari/Chrome on iPhone/iPad)
+7. **Chat Persistence**: Messages are not stored; lost when users leave
+8. **No Message History**: New joiners don't see previous messages
 
 ## Security Considerations
 
@@ -322,10 +406,16 @@ npm start        # Start production server
 
 ### Environment Setup
 
-1. Set `NEXT_PUBLIC_AGORA_APP_ID` in deployment platform
+1. Set all required environment variables in deployment platform:
+   - `NEXT_PUBLIC_AGORA_APP_ID`
+   - `NEXT_PUBLIC_PUSHER_KEY`
+   - `NEXT_PUBLIC_PUSHER_CLUSTER`
+   - `PUSHER_APP_ID`
+   - `PUSHER_SECRET`
 2. Optionally set `NEXT_PUBLIC_AGORA_TOKEN` for production
-3. Ensure HTTPS is enabled
+3. Ensure HTTPS is enabled (required for WebRTC and screen sharing)
 4. Configure CORS if needed
+5. Verify Pusher app settings allow your domain
 
 ### Recommended Platforms
 
@@ -344,7 +434,9 @@ npm install
 
 # Set up environment
 cp .env.example .env.local
-# Edit .env.local with your Agora App ID
+# Edit .env.local with your credentials:
+# - Agora App ID from https://console.agora.io
+# - Pusher credentials from https://pusher.com
 
 # Run development server
 npm run dev
@@ -360,14 +452,20 @@ npm run dev
 4. Join with same Room ID in second window
 5. Test mic/camera controls
 6. Test screen sharing feature
-7. Test leave functionality
+7. Test chat messaging (send messages between windows)
+8. Test leave functionality
 
 ## Future Enhancements
 
 ### Planned Features
 - Multi-party video calls (3+ participants)
 - ~~Screen sharing~~ ✅ Implemented
-- Text chat
+- ~~Text chat~~ ✅ Implemented
+- Message persistence (database storage)
+- Chat history for new joiners
+- File sharing in chat
+- Emoji reactions
+- Typing indicators
 - Call recording
 - Virtual backgrounds
 - Noise cancellation
@@ -389,6 +487,8 @@ npm run dev
 
 ### Production Dependencies
 - `agora-rtc-sdk-ng`: Core video/audio functionality
+- `pusher`: Server-side Pusher SDK for message broadcasting
+- `pusher-js`: Client-side Pusher SDK for real-time messaging
 - `lucide-react`: Icon library
 - `next`: Framework
 - `react` & `react-dom`: UI library
@@ -431,6 +531,19 @@ npm run dev
 - Check audio output settings
 - Ensure only one tab is active
 
+**Chat Not Working**
+- Verify all Pusher environment variables are set
+- Check browser console for connection errors
+- Ensure Pusher app is active (not paused)
+- Verify API route is accessible
+- Check network tab for failed requests
+
+**Messages Not Appearing**
+- Confirm both users are in the same room
+- Check Pusher connection status (should show "connected")
+- Verify sender name is different for each user
+- Check browser console for errors
+
 **Screen Share Not Working**
 - Ensure HTTPS is enabled (required for screen sharing)
 - Check browser permissions for screen capture
@@ -449,8 +562,38 @@ MIT License
 - **Icons**: Lucide Icons
 - **Styling**: Tailwind CSS
 
+## API Routes
+
+### POST /api/send-message
+
+**Purpose**: Broadcast chat messages via Pusher
+
+**Request Body**:
+```json
+{
+  "channel": "room-id",
+  "message": {
+    "text": "Hello",
+    "sender": "User Name",
+    "timestamp": 1234567890
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "success": true
+}
+```
+
+**Error Handling**:
+- Returns 500 if Pusher trigger fails
+- Logs errors to console
+- Client retries on failure
+
 ---
 
-**Last Updated**: February 28, 2026
-**Version**: 0.1.0
+**Last Updated**: March 7, 2026
+**Version**: 0.2.0
 **Status**: Development
