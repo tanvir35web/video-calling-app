@@ -2,7 +2,7 @@
 
 ## Overview
 
-A real-time peer-to-peer video calling application built with Next.js 16 and Agora RTC SDK. The app enables users to create or join video rooms using a simple Room ID system, supporting one-to-one video and audio communication with Bengali language UI elements.
+A real-time video calling application built with Next.js 16 and Agora RTC SDK. The app enables users to create or join video rooms using a simple Room ID system, supporting multi-party video and audio communication with Bengali language UI elements.
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ A real-time peer-to-peer video calling application built with Next.js 16 and Ago
 video-call-app/
 ├── app/                          # Next.js App Router
 │   ├── page.tsx                  # Home page (join/create room)
-│   ├── layout.tsx                # Root layout with fonts
+│   ├── layout.tsx                # Root layout with fonts & viewport meta
 │   ├── globals.css               # Global styles
 │   ├── favicon.ico               # App icon
 │   ├── api/
@@ -63,13 +63,13 @@ video-call-app/
 ### 2. Video Communication
 - **Real-time Video**: WebRTC-based video streaming via Agora
 - **Real-time Audio**: Synchronized audio communication
-- **One-to-One Calls**: Supports two participants per room
-- **Automatic Connection**: Detects when remote user joins/leaves
+- **Multi-party Calls**: Supports multiple participants per room with adaptive grid layout
+- **Automatic Connection**: Detects when remote users join/leave
 
 ### 3. Media Controls
 - **Microphone Toggle**: Mute/unmute audio
 - **Camera Toggle**: Turn video on/off
-- **Screen Sharing**: Share your screen, window, or tab with remote user
+- **Screen Sharing**: Share your screen, window, or tab with other participants
 - **Leave Call**: Exit room and return to home
 - **Visual Feedback**: Icons and UI states reflect control status
 
@@ -77,17 +77,19 @@ video-call-app/
 - **Text Messaging**: Send and receive messages during video calls
 - **Pusher Integration**: WebSocket-based real-time message delivery
 - **Chat Panel**: Collapsible side panel with message history
+- **Unread Badge**: Notification count for unread messages when chat is closed
 - **Message Indicators**: Sender name, timestamp, and read status
 - **Auto-scroll**: Automatically scrolls to latest messages
 - **Bengali UI**: Chat interface with Bengali placeholders
 
 ### 5. User Experience
 - **Loading States**: Spinner during camera/mic initialization
-- **Error Handling**: User-friendly error messages
-- **Waiting State**: Shows placeholder when remote user hasn't joined
+- **Error Handling**: Categorized error types (permission, device, unknown) with contextual guidance
+- **Permission Modal**: Guides users through camera/mic permissions with retry support
+- **Waiting State**: Shows placeholder when no remote users have joined
 - **Live Indicator**: Visual "Live" badge during active calls
-- **Permission Modal**: Guides users through camera/mic permissions
 - **Responsive Design**: Works on desktop and mobile devices
+- **Viewport Optimization**: Configured for mobile with `device-width`, no user scaling, and `viewport-fit: cover`
 
 ## Component Breakdown
 
@@ -113,7 +115,7 @@ video-call-app/
 **Purpose**: Dynamic route for video call rooms
 
 **Features**:
-- URL parameter extraction (roomId)
+- URL parameter extraction (roomId) via `use()` for async params
 - Query parameter handling (name)
 - Name confirmation flow
 - Suspense boundary for loading
@@ -128,15 +130,19 @@ video-call-app/
 **Purpose**: Main video call interface and controls
 
 **Features**:
-- Agora hook integration
-- Local and remote video display
-- Control buttons (mic, camera, screen share, leave)
+- Agora hook integration for video/audio
+- Pusher chat integration via useAgoraChat hook
+- Local and remote video display with adaptive grid layout
+- Control buttons (mic, camera, screen share, chat, leave)
 - Screen sharing indicator badge
-- Connection status display
-- Error and loading states
+- Unread message count badge on chat button
+- Connection status display with participant count
+- Error and loading states with permission modal
+- iOS screen share detection (hides button on unsupported devices)
 
 **State Management**:
 - Uses `useAgora` hook for all Agora functionality
+- Uses `useAgoraChat` hook for chat functionality
 - Router for navigation
 - Conditional rendering based on connection state
 
@@ -179,7 +185,8 @@ video-call-app/
 **Purpose**: Guide users through camera and microphone permissions
 
 **Features**:
-- Step-by-step permission instructions
+- Categorized error handling (permission, device, unknown)
+- Step-by-step permission instructions per error type
 - Browser-specific guidance
 - Visual feedback for permission status
 - Retry mechanism for denied permissions
@@ -190,28 +197,33 @@ video-call-app/
 
 **Responsibilities**:
 - Client initialization
-- Channel joining
+- Channel joining (uses userName as UID)
 - Track creation (audio/video/screen)
 - Publishing local tracks
-- Subscribing to remote users
-- Event handling (user-published, user-left)
+- Subscribing to remote users (supports multiple)
+- Event handling (user-published, user-unpublished, user-left)
 - Media control (mute, camera toggle, screen share)
 - Track switching between camera and screen
+- Categorized error detection (permission / device / unknown)
+- Retry connection support
 - Cleanup on unmount
 
 **Return Values**:
 - `localVideoTrack`: Local video track
-- `remoteUser`: Remote user object with tracks
+- `remoteUsers`: Array of remote user objects with tracks
 - `isJoined`: Connection status
 - `isMuted`: Microphone state
 - `isCameraOff`: Camera state
 - `isScreenSharing`: Screen sharing state
 - `isLoading`: Initialization state
 - `error`: Error message
+- `errorType`: Categorized error type (`"permission"` | `"device"` | `"unknown"` | `null`)
 - `toggleMic()`: Mute/unmute function
 - `toggleCamera()`: Camera on/off function
 - `toggleScreenShare()`: Start/stop screen sharing
 - `leaveChannel()`: Disconnect function
+- `retryConnection()`: Re-initialize connection
+- `client`: Agora RTC client reference
 
 ### 8. useAgoraChat Hook (`hooks/useAgoraChat.ts`)
 
@@ -254,10 +266,10 @@ video-call-app/
 6. useAgora hook initializes Agora client
 7. Requests camera/mic permissions
 8. Creates local audio/video tracks
-9. Joins Agora channel with Room ID
+9. Joins Agora channel with Room ID (userName as UID)
 10. Publishes local tracks
 11. Listens for remote user events
-12. Renders video players
+12. Renders video players in adaptive grid
 
 ### Creating a Room
 
@@ -273,9 +285,9 @@ video-call-app/
 1. Remote user joins same channel
 2. Agora fires "user-published" event
 3. Local client subscribes to remote tracks
-4. Remote video/audio tracks added to state
-5. VideoPlayer renders remote stream
-6. UI updates to show "Connected" status
+4. Remote video/audio tracks added to remoteUsers array
+5. VideoPlayer renders remote stream in grid
+6. UI updates to show participant count
 
 ## Environment Configuration
 
@@ -321,7 +333,7 @@ NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 
 - **Local Tracks**: Created via `AgoraRTC.createMicrophoneAndCameraTracks()`
 - **Screen Tracks**: Created via `AgoraRTC.createScreenVideoTrack()`
-- **Remote Tracks**: Received via subscription
+- **Remote Tracks**: Received via subscription (supports multiple remote users)
 - **Track Switching**: Seamlessly switches between camera and screen share
 - **Cleanup**: Tracks closed on component unmount
 
@@ -348,20 +360,29 @@ NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 
 ### Responsive Behavior
 
-- **Mobile**: Single column video layout
-- **Desktop**: Two-column grid for local/remote video
+- **Mobile**: Single column video layout, `100dvh` viewport height
+- **Desktop**: Adaptive grid (2-col for 2 users, 3-col for 3+ users)
 - **Controls**: Always centered at bottom
+- **Chat Panel**: Fixed position overlay (right side, 320px wide)
+
+## Video Grid Layout
+
+The video grid adapts based on participant count:
+- **Solo (no remote users)**: Single centered video, max-width 3xl
+- **2 participants (1 remote)**: 1-col on mobile, 2-col on desktop
+- **3 participants (2 remote)**: 2-col on mobile, 3-col on desktop with local spanning 2 cols on mobile
+- **4+ participants**: 2-col on mobile, 3-col on desktop auto-rows
 
 ## Known Issues & Limitations
 
-1. **One-to-One Only**: Currently supports only 2 participants
-2. **No Token Auth**: Uses null token for Agora (testing mode)
-3. **No Recording**: Call recording not implemented
-4. **Browser Compatibility**: Requires modern browsers with WebRTC support
-5. **Screen Share**: Camera is disabled while screen sharing is active
-6. **iOS Limitation**: Screen sharing is not supported on iOS devices (Safari/Chrome on iPhone/iPad)
-7. **Chat Persistence**: Messages are not stored; lost when users leave
-8. **No Message History**: New joiners don't see previous messages
+1. **No Token Auth**: Uses null token for Agora (testing mode)
+2. **No Recording**: Call recording not implemented
+3. **Browser Compatibility**: Requires modern browsers with WebRTC support
+4. **Screen Share**: Camera is disabled while screen sharing is active
+5. **iOS Limitation**: Screen sharing is not supported on iOS devices (Safari/Chrome on iPhone/iPad)
+6. **Chat Persistence**: Messages are not stored; lost when users leave
+7. **No Message History**: New joiners don't see previous messages
+8. **Remote User Names**: Remote users display as "User {uid}" instead of their actual name
 
 ## Security Considerations
 
@@ -387,6 +408,7 @@ NEXT_PUBLIC_AGORA_TOKEN=your_token_for_production
 - Lazy loading with Suspense
 - Ref-based track management (avoids re-renders)
 - Callback memoization in useAgora
+- `100dvh` viewport for consistent mobile height
 
 ### Potential Improvements
 - Video quality adaptation based on network
@@ -454,13 +476,15 @@ npm run dev
 6. Test screen sharing feature
 7. Test chat messaging (send messages between windows)
 8. Test leave functionality
+9. Open a third window to test multi-party grid layout
 
 ## Future Enhancements
 
 ### Planned Features
-- Multi-party video calls (3+ participants)
 - ~~Screen sharing~~ ✅ Implemented
 - ~~Text chat~~ ✅ Implemented
+- ~~Multi-party video calls~~ ✅ Implemented
+- Display actual remote user names (instead of "User {uid}")
 - Message persistence (database storage)
 - Chat history for new joiners
 - File sharing in chat
@@ -594,6 +618,6 @@ MIT License
 
 ---
 
-**Last Updated**: March 7, 2026
-**Version**: 0.2.0
+**Last Updated**: April 25, 2026
+**Version**: 0.3.0
 **Status**: Development
