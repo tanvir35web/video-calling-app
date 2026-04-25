@@ -100,7 +100,7 @@ export default function Home() {
               style={{ width: "200%", transform: tab === "join" ? "translateX(0)" : "translateX(-50%)" }}
             >
               {/* Join panel */}
-              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingRight: "1.5rem" }}>
+              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingRight: "0.3em" }}>
                 <div className="space-y-1.5">
                   <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block">Your Name</label>
                   <input
@@ -137,7 +137,7 @@ export default function Home() {
               </div>
 
               {/* Create panel */}
-              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingLeft: "1.5rem" }}>
+              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingLeft: "0.3rem" }}>
                 <div className="space-y-1.5">
                   <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block">Your Name</label>
                   <input
