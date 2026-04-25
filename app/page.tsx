@@ -8,6 +8,27 @@ function generateRoomId() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+const inputCls =
+  "w-full bg-white/4 border border-white/8 text-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 placeholder-gray-600 transition-all";
+
+const primaryBtn =
+  "w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-medium rounded-xl py-3 text-sm transition-colors flex items-center justify-center gap-2";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-gray-500 text-xs uppercase tracking-wider block">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function ErrorMsg({ msg }: { msg: string }) {
+  return (
+    <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{msg}</p>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState<"join" | "create">("join");
@@ -24,7 +45,7 @@ export default function Home() {
 
   const handleJoin = () => {
     if (!userName.trim()) { setError("Please enter your name"); return; }
-    if (!roomId.trim()) { setError("Please enter Room ID"); return; }
+    if (!roomId.trim()) { setError("Please enter a Room ID"); return; }
     setError("");
     router.push(`/room/${roomId.trim()}?name=${encodeURIComponent(userName.trim())}`);
   };
@@ -33,9 +54,8 @@ export default function Home() {
     if (!creatorName.trim()) { setCreateError("Please enter your name"); return; }
     setCreateError("");
     const newRoomId = generateRoomId();
-    const link = `${window.location.origin}/room/${newRoomId}`;
     setGeneratedRoomId(newRoomId);
-    setGeneratedLink(link);
+    setGeneratedLink(`${window.location.origin}/room/${newRoomId}`);
   };
 
   const handleCopy = async () => {
@@ -49,153 +69,114 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background orbs */}
-      <div className="absolute top-[-10%] left-[-5%] w-125 h-125 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-125 h-125 bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-75 h-75 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
+    <main className="min-h-screen bg-[#080810] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative w-full max-w-md z-10">
+      <div className="relative w-full max-w-sm z-10">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-500/30 mb-4">
-            <Video size={30} className="text-white" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-5 shadow-lg shadow-indigo-500/30">
+            <Video size={26} className="text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">
-            Video<span className="bg-linear-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">Call</span>
+          <h1 className="text-3xl font-semibold text-white tracking-tight">
+            Video<span className="text-indigo-400">Call</span>
           </h1>
-          <p className="text-gray-500 mt-2 text-sm">Connect with anyone, anywhere</p>
+          <p className="text-gray-500 mt-1.5 text-sm">Connect with anyone, anywhere</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
+        <div className="bg-white/4 border border-white/8 backdrop-blur-xl rounded-2xl p-6 shadow-2xl">
           {/* Tabs */}
-          <div className="flex bg-white/5 rounded-2xl p-1 mb-6 border border-white/5">
-            <button
-              onClick={() => { setTab("join"); setError(""); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                tab === "join"
-                  ? "bg-linear-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/25"
-                  : "text-gray-400 hover:text-gray-200"
-              }`}
-            >
-              <Users size={15} /> Join Room
-            </button>
-            <button
-              onClick={() => { setTab("create"); setCreateError(""); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                tab === "create"
-                  ? "bg-linear-to-r from-violet-600 to-violet-500 text-white shadow-lg shadow-violet-500/25"
-                  : "text-gray-400 hover:text-gray-200"
-              }`}
-            >
-              <Link size={15} /> Create Room
-            </button>
+          <div className="flex gap-1 bg-white/4 rounded-xl p-1 mb-6">
+            {(["join", "create"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setTab(t); setError(""); setCreateError(""); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  tab === t
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                    : "text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {t === "join" ? <Users size={14} /> : <Link size={14} />}
+                {t === "join" ? "Join Room" : "Create Room"}
+              </button>
+            ))}
           </div>
 
-          {/* Sliding panels */}
-          <div className="overflow-hidden">
-            <div
-              className="flex transition-transform duration-350 ease-in-out"
-              style={{ width: "200%", transform: tab === "join" ? "translateX(0)" : "translateX(-50%)" }}
-            >
-              {/* Join panel */}
-              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingRight: "0.3em" }}>
-                <div className="space-y-1.5">
-                  <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block">Your Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={userName}
-                    onChange={(e) => { setUserName(e.target.value); setError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                    className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-gray-600 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block">Room ID</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. ABC123"
-                    value={roomId}
-                    onChange={(e) => { setRoomId(e.target.value); setError(""); }}
-                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                    className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 placeholder-gray-600 transition-all font-mono tracking-widest"
-                  />
-                </div>
-                {error && (
-                  <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                    {error}
-                  </p>
-                )}
-                <button
-                  onClick={handleJoin}
-                  className="w-full bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  Join Room <ArrowRight size={16} />
-                </button>
-              </div>
-
-              {/* Create panel */}
-              <div className="space-y-4 min-w-0" style={{ width: "50%", paddingLeft: "0.3rem" }}>
-                <div className="space-y-1.5">
-                  <label className="text-gray-400 text-xs font-medium uppercase tracking-wider block">Your Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={creatorName}
-                    onChange={(e) => { setCreatorName(e.target.value); setCreateError(""); }}
-                    disabled={!!generatedLink}
-                    className="w-full bg-white/5 border border-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 placeholder-gray-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                  />
-                </div>
-
-                {createError && (
-                  <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-                    {createError}
-                  </p>
-                )}
-
-                {!generatedLink ? (
-                  <button
-                    onClick={handleCreate}
-                    className="w-full bg-linear-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    <Link size={16} /> Generate Room Link
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
-                      <p className="text-gray-500 text-xs mb-1.5 uppercase tracking-wider font-medium">Shareable Link</p>
-                      <p className="text-blue-400 text-xs break-all font-mono leading-relaxed">{generatedLink}</p>
-                    </div>
-
-                    <button
-                      onClick={handleCopy}
-                      className={`w-full font-semibold rounded-xl py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2 border ${
-                        copied
-                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-400"
-                          : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      {copied ? <><Check size={16} /> Link Copied!</> : <><Copy size={16} /> Copy Link</>}
-                    </button>
-
-                    <button
-                      onClick={handleStartCall}
-                      className="w-full bg-linear-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                      Start Call <ArrowRight size={16} />
-                    </button>
-
-                    <p className="text-gray-600 text-xs text-center leading-relaxed">
-                      Share this link — others can click it to join your call
-                    </p>
-                  </div>
-                )}
-              </div>
+          {/* Join panel */}
+          {tab === "join" && (
+            <div className="space-y-4">
+              <Field label="Your Name">
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={userName}
+                  onChange={(e) => { setUserName(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Room ID">
+                <input
+                  type="text"
+                  placeholder="e.g. ABC123"
+                  value={roomId}
+                  onChange={(e) => { setRoomId(e.target.value); setError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                  className={`${inputCls} font-mono tracking-widest`}
+                />
+              </Field>
+              {error && <ErrorMsg msg={error} />}
+              <button onClick={handleJoin} className={primaryBtn}>
+                Join Room <ArrowRight size={15} />
+              </button>
             </div>
-          </div>
+          )}
+
+          {/* Create panel */}
+          {tab === "create" && (
+            <div className="space-y-4">
+              <Field label="Your Name">
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={creatorName}
+                  onChange={(e) => { setCreatorName(e.target.value); setCreateError(""); }}
+                  disabled={!!generatedLink}
+                  className={`${inputCls} disabled:opacity-40 disabled:cursor-not-allowed`}
+                />
+              </Field>
+              {createError && <ErrorMsg msg={createError} />}
+              {!generatedLink ? (
+                <button onClick={handleCreate} className={primaryBtn}>
+                  <Link size={15} /> Generate Room Link
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-white/4 border border-white/8 rounded-xl p-3.5">
+                    <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1.5">Shareable Link</p>
+                    <p className="text-indigo-400 text-xs break-all font-mono leading-relaxed">{generatedLink}</p>
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className={`w-full rounded-xl py-2.5 text-sm font-medium flex items-center justify-center gap-2 border transition-all duration-200 ${
+                      copied
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : "bg-white/4 border-white/8 text-gray-400 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    {copied ? <><Check size={14} /> Copied!</> : <><Copy size={14} /> Copy Link</>}
+                  </button>
+                  <button onClick={handleStartCall} className={primaryBtn}>
+                    Start Call <ArrowRight size={15} />
+                  </button>
+                  <p className="text-gray-600 text-xs text-center">Share this link for others to join</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>
