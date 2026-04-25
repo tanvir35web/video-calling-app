@@ -25,14 +25,14 @@ export default function Home() {
   const [createError, setCreateError] = useState("");
 
   const handleJoin = () => {
-    if (!userName.trim()) { setError("আপনার নাম দিন"); return; }
-    if (!roomId.trim()) { setError("Room ID দিন"); return; }
+    if (!userName.trim()) { setError("Please enter your name"); return; }
+    if (!roomId.trim()) { setError("Please enter Room ID"); return; }
     setError("");
     router.push(`/room/${roomId.trim()}?name=${encodeURIComponent(userName.trim())}`);
   };
 
   const handleCreate = () => {
-    if (!creatorName.trim()) { setCreateError("আপনার নাম দিন"); return; }
+    if (!creatorName.trim()) { setCreateError("Please enter your name"); return; }
     setCreateError("");
     const newRoomId = generateRoomId();
     const link = `${window.location.origin}/room/${newRoomId}`;
@@ -55,7 +55,7 @@ export default function Home() {
       <div className="md:bg-gray-900 rounded-2xl p-1 md:p-8 w-full max-w-md shadow-xl">
         <h1 className="text-3xl font-bold text-white text-center mb-2 flex items-center justify-center gap-2">
           <Video size={38} /> Video Call</h1>
-        <p className="text-gray-400 text-center mb-6">যেকোনো জায়গা থেকে connect করুন</p>
+        <p className="text-gray-400 text-center mb-6">Connect from anywhere</p>
 
         {/* Tabs */}
         <div className="flex bg-gray-800 rounded-xl p-1 mb-6">
@@ -65,7 +65,7 @@ export default function Home() {
               tab === "join" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Video size={16} /> Join করুন
+            <Video size={16} /> Join
           </button>
           <button
             onClick={() => setTab("create")}
@@ -73,7 +73,7 @@ export default function Home() {
               tab === "create" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"
             }`}
           >
-            <Link size={16} /> Link তৈরি করুন
+            <Link size={16} /> Create Link
           </button>
         </div>
 
@@ -81,7 +81,7 @@ export default function Home() {
         {tab === "join" && (
           <div className="space-y-4">
             <div>
-              <label className="text-gray-300 text-sm mb-1 block">আপনার নাম</label>
+              <label className="text-gray-300 text-sm mb-1 block">Your Name</label>
               <input
                 type="text"
                 placeholder="Name"
@@ -106,7 +106,7 @@ export default function Home() {
               onClick={handleJoin}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2"
             >
-              Join করুন <ArrowRight size={18} />
+              Join <ArrowRight size={18} />
             </button>
           </div>
         )}
@@ -115,7 +115,7 @@ export default function Home() {
         {tab === "create" && (
           <div className="space-y-4">
             <div>
-              <label className="text-gray-300 text-sm mb-1 block">আপনার নাম</label>
+              <label className="text-gray-300 text-sm mb-1 block">Your Name</label>
               <input
                 type="text"
                 placeholder="Name"
@@ -133,7 +133,7 @@ export default function Home() {
                 onClick={handleCreate}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2"
               >
-                <Link size={18} /> Link তৈরি করুন
+                <Link size={18} /> Create Link
               </button>
             ) : (
               <div className="space-y-3">
@@ -152,7 +152,7 @@ export default function Home() {
                       : "bg-gray-700 hover:bg-gray-600 text-white"
                   }`}
                 >
-                  {copied ? <><Check size={18} /> Copied!</> : <><Copy size={18} /> Link Copy করুন</>}
+                  {copied ? <><Check size={18} /> Copied!</> : <><Copy size={18} /> Copy Link</>}
                 </button>
 
                 {/* Start call */}
@@ -160,11 +160,11 @@ export default function Home() {
                   onClick={handleStartCall}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2"
                 >
-                  Call শুরু করুন <ArrowRight size={18} />
+                  Start Call <ArrowRight size={18} />
                 </button>
 
                 <p className="text-gray-600 text-xs text-center">
-                  Link share করুন, অন্যজন click করলে নাম দিয়ে join করতে পারবে
+                  Share this link — others can click it to join the call
                 </p>
               </div>
             )}

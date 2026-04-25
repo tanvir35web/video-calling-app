@@ -17,12 +17,12 @@ function RoomContent({ roomId }: { roomId: string }) {
   const [error, setError] = useState("");
 
   const handleJoin = () => {
-    if (!name.trim()) { setError("আপনার নাম দিন"); return; }
+    if (!name.trim()) { setError("Please enter your name"); return; }
     setError("");
     setConfirmedName(name.trim());
   };
 
-  // নাম না থাকলে name input দেখাবে
+  // Show name input if no name is set
   if (!confirmedName) {
     return (
       <main className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
@@ -32,7 +32,7 @@ function RoomContent({ roomId }: { roomId: string }) {
           </div>
 
           <h1 className="text-2xl font-bold text-white text-center mb-1">
-            Video Call এ যোগ দিন
+            Join Video Call
           </h1>
           <p className="text-gray-400 text-center text-sm mb-6">
             Room: <span className="text-blue-400 font-mono">{roomId}</span>
@@ -40,10 +40,10 @@ function RoomContent({ roomId }: { roomId: string }) {
 
           <div className="space-y-4">
             <div>
-              <label className="text-gray-300 text-sm mb-1 block">আপনার নাম</label>
+              <label className="text-gray-300 text-sm mb-1 block">Your Name</label>
               <input
                 type="text"
-                placeholder="যেমন: Rahim"
+                placeholder="e.g. Alex"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleJoin()}
@@ -58,7 +58,7 @@ function RoomContent({ roomId }: { roomId: string }) {
               onClick={handleJoin}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg py-3 transition-colors flex items-center justify-center gap-2"
             >
-              Join করুন <ArrowRight size={18} />
+              Join <ArrowRight size={18} />
             </button>
           </div>
         </div>

@@ -21,34 +21,34 @@ export default function PermissionModal({
     switch (errorType) {
       case "permission":
         return {
-          title: "Camera ও Mic Permission প্রয়োজন",
+          title: "Camera and Microphone Permission Required",
           description:
-            "Video call করতে আপনার camera এবং microphone access দিতে হবে।",
+            "You need to grant camera and microphone access to make video calls.",
           steps: [
-            "Browser এর address bar এ lock/camera icon এ ক্লিক করুন",
-            "Camera এবং Microphone permission 'Allow' করুন",
-            "Page reload করুন অথবা 'আবার চেষ্টা করুন' বাটনে ক্লিক করুন",
+            "Click the lock/camera icon in the browser address bar",
+            "Allow Camera and Microphone permissions",
+            "Reload the page or click the Retry button",
           ],
         };
       case "device":
         return {
-          title: "Camera বা Mic খুঁজে পাওয়া যায়নি",
+          title: "Camera or Microphone Not Found",
           description:
-            "আপনার device এ camera বা microphone সংযুক্ত নেই বা অন্য app ব্যবহার করছে।",
+            "Your device does not have a camera or microphone connected, or another application is using it.",
           steps: [
-            "নিশ্চিত করুন camera/mic সঠিকভাবে সংযুক্ত আছে",
-            "অন্য কোনো app (Zoom, Teams, etc.) camera/mic ব্যবহার করছে কিনা চেক করুন",
-            "Device settings থেকে camera/mic enable করুন",
+            "Check that your camera/microphone is properly connected",
+            "Check if another app (Zoom, Teams, etc.) is using the camera/microphone",
+            "Enable camera/microphone in device settings",
           ],
         };
       default:
         return {
-          title: "কিছু সমস্যা হয়েছে",
-          description: "Camera বা Mic access করতে সমস্যা হচ্ছে।",
+          title: "Something Went Wrong",
+          description: "Unable to access camera or microphone.",
           steps: [
-            "Browser permission চেক করুন",
-            "Device settings চেক করুন",
-            "Page reload করে আবার চেষ্টা করুন",
+            "Check browser permissions",
+            "Check device settings",
+            "Reload the page and try again",
           ],
         };
     }
@@ -88,7 +88,7 @@ export default function PermissionModal({
         {/* Steps */}
         <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
           <p className="text-sm md:text-base font-bold text-gray-300 mb-3">
-            কিভাবে ঠিক করবেন:
+            How to fix:
           </p>
           <ol className="space-y-2">
             {content.steps.map((step, index) => (
@@ -106,13 +106,13 @@ export default function PermissionModal({
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
-            বাতিল করুন
+            Cancel
           </button>
           <button
             onClick={onRetry}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            আবার চেষ্টা করুন
+            Retry
           </button>
         </div>
       </div>

@@ -23,6 +23,8 @@ interface UseAgoraReturn {
   isLoading: boolean;
   error: string | null;
   errorType: "permission" | "device" | "unknown" | null;
+  hasAudio: boolean;
+  hasVideo: boolean;
   toggleMic: () => Promise<void>;
   toggleCamera: () => Promise<void>;
   toggleScreenShare: () => Promise<void>;
@@ -35,7 +37,7 @@ const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID as string;
 const TOKEN = process.env.NEXT_PUBLIC_AGORA_TOKEN || null;
 
 if (!APP_ID) {
-  throw new Error(".env.local এ NEXT_PUBLIC_AGORA_APP_ID সেট করুন");
+  throw new Error("Set NEXT_PUBLIC_AGORA_APP_ID in .env.local");
 }
 
 export function useAgora(channelName: string, userName: string): UseAgoraReturn {
@@ -54,6 +56,8 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<"permission" | "device" | "unknown" | null>(null);
+  const [hasAudio, setHasAudio] = useState(false);
+  const [hasVideo, setHasVideo] = useState(false);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
   // Leave channel
@@ -83,11 +87,11 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
         setError(null);
         setErrorType(null);
 
-        // Client তৈরি করা
+        // Create client
         const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         clientRef.current = client;
 
-        // Remote user publish হলে (অন্যজন join করলে)
+        // When remote user publishes (someone joins)
         client.on("user-published", async (user, mediaType) => {
           await client.subscribe(user, mediaType);
 
@@ -116,7 +120,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
           }
         });
 
-        // Remote user unpublish করলে
+        // When remote user unpublishes
         client.on("user-unpublished", (user, mediaType) => {
           if (mediaType === "video") {
             setRemoteUsers((prev) =>
@@ -127,34 +131,79 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
           }
         });
 
-        // Remote user leave করলে
+        // When remote user leaves
         client.on("user-left", (user) => {
           setRemoteUsers((prev) => prev.filter((u) => u.uid !== user.uid));
         });
 
-        // Channel এ join করা (token ছাড়া টেস্টের জন্য null)
+        // Join channel
         const uid = await client.join(APP_ID, channelName, TOKEN, userName);
         console.log("Joined with UID:", uid);
 
-        // নিজের camera + mic track তৈরি
-        const [audioTrack, videoTrack] =
-          await AgoraRTC.createMicrophoneAndCameraTracks();
+        // Create audio and video tracks
+        let audioTrack: ILocalAudioTrack | null = null;
+        let videoTrack: ILocalVideoTrack | null = null;
+        const tracksToPublish: (ILocalAudioTrack | ILocalVideoTrack)[] = [];
 
-        localAudioTrackRef.current = audioTrack;
-        localVideoTrackRef.current = videoTrack;
-        setLocalVideoTrack(videoTrack);
+        try {
+          // Try to create both audio and video tracks
+          try {
+            const tracks = await AgoraRTC.createMicrophoneAndCameraTracks();
+            audioTrack = tracks[0];
+            videoTrack = tracks[1];
+            tracksToPublish.push(audioTrack, videoTrack);
+            setHasAudio(true);
+            setHasVideo(true);
+            console.log("Both audio and video tracks created successfully");
+          } catch (trackError: unknown) {
+            console.warn("Could not create both tracks, trying individually:", trackError);
+            
+            // Try to create audio track only
+            try {
+              audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+              tracksToPublish.push(audioTrack);
+              setHasAudio(true);
+              console.log("Audio track created successfully");
+            } catch (audioErr) {
+              console.warn("Could not create audio track:", audioErr);
+              setHasAudio(false);
+            }
 
-        // Publish করা
-        await client.publish([audioTrack, videoTrack]);
+            // Try to create video track only
+            try {
+              videoTrack = await AgoraRTC.createCameraVideoTrack();
+              tracksToPublish.push(videoTrack);
+              setHasVideo(true);
+              console.log("Video track created successfully");
+            } catch (videoErr) {
+              console.warn("Could not create video track:", videoErr);
+              setHasVideo(false);
+            }
+          }
 
-        setIsJoined(true);
-        setIsLoading(false);
+          localAudioTrackRef.current = audioTrack;
+          localVideoTrackRef.current = videoTrack;
+          setLocalVideoTrack(videoTrack);
+
+          // Publish available tracks (even if empty)
+          if (tracksToPublish.length > 0) {
+            await client.publish(tracksToPublish);
+          }
+
+          setIsJoined(true);
+          setIsLoading(false);
+        } catch (publishError: unknown) {
+          console.error("Publish error:", publishError);
+          // Even if publish fails, allow the user to be in the call
+          setIsJoined(true);
+          setIsLoading(false);
+        }
       } catch (err: unknown) {
         console.error("Agora error:", err);
         
         // Detect error type
         let detectedErrorType: "permission" | "device" | "unknown" = "unknown";
-        let errorMessage = "Camera/Mic access দিন এবং আবার চেষ্টা করুন";
+        let errorMessage = "Please grant Camera/Mic access and try again";
 
         if (err instanceof Error) {
           const errorName = err.name;
@@ -167,7 +216,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
             errorMsg.includes("denied")
           ) {
             detectedErrorType = "permission";
-            errorMessage = "Camera এবং Microphone permission দিতে হবে";
+            errorMessage = "Camera and Microphone permissions required";
           }
           // Device not found or in use errors
           else if (
@@ -178,7 +227,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
             errorMsg.includes("device in use")
           ) {
             detectedErrorType = "device";
-            errorMessage = "Camera বা Mic খুঁজে পাওয়া যায়নি বা অন্য app ব্যবহার করছে";
+            errorMessage = "Camera or Microphone not found or in use by another application";
           }
         }
 
@@ -190,7 +239,7 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
 
     init();
 
-    // Cleanup — page ছাড়লে
+    // Cleanup on page leave
     return () => {
       leaveChannel();
     };
@@ -308,6 +357,8 @@ export function useAgora(channelName: string, userName: string): UseAgoraReturn 
     isLoading,
     error,
     errorType,
+    hasAudio,
+    hasVideo,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
